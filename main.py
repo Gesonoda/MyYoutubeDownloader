@@ -4,9 +4,8 @@ from pathlib import Path
 import os
 from pytube import YouTube
 from pytube.cli import on_progress
-import shutil
 
-def baixar_link(link, novo_diretorio):
+def verificar_arquivo_existente(link, local_para_download):
     """_summary_
 
     Args:
@@ -18,12 +17,15 @@ def baixar_link(link, novo_diretorio):
     """
     yt = pytube.YouTube(link, on_progress_callback = on_progress)
     titulo = yt.title
-    print("Título: ", titulo)
-    print("Baixando...")
-    ys=yt.streams.get_audio_only()
-    downloaded_file = ys.download(novo_diretorio)
-    file = converte_em_mp3(downloaded_file)
-    return file, str(titulo)
+    pathlist = Path(local_para_download).glob('*.mp3')
+    for path in pathlist:
+        var = False
+        path_basename = os.path.basename(path)
+        path_basename = path_basename[:-4]
+        if titulo.__eq__(path_basename):
+            var = True
+            break
+    return var
 
 def converte_em_mp3(downloaded_file):
     """_summary_
@@ -57,7 +59,6 @@ def cria_pasta(nome_pasta):
             raise e
     return
 
-
 def verificar_se_existe_pasta(novo_diretorio):
     if not os.path.isdir(novo_diretorio):
         try:
@@ -66,14 +67,12 @@ def verificar_se_existe_pasta(novo_diretorio):
             raise e
 
 def criar_pasta_para_download(nome_arquivo):
-    if nome_arquivo.endswith('.txt'):
-        name_archive = nome_arquivo[21:-len(".txt")]
     dir = str(Path(r"C:/Users/georg/Music/AudiosSDP/SDP_PlinioCorreiadeOliveira_videos"))
-    novo_diretorio = Path(dir + '/' + name_archive)
+    novo_diretorio = Path(dir + '/' + nome_arquivo)
     verificar_se_existe_pasta(novo_diretorio)
     return novo_diretorio
 
-def ler_arquivo(arquivo):
+def ler_arquivo_txt(arquivo):
     with open(arquivo, "r") as archive:
         lista_de_links = list()
         for link in archive:
@@ -88,22 +87,30 @@ def verificar_lista_vazia(lista_de_links):
         print("Erro - verificar se o arquivo está vazio")
         exit
 
-def baixar_arquivos(novo_diretorio, lista_de_links):
+def verificar_arquivos(novo_diretorio, lista_de_links):
     for link in lista_de_links:
-        mp3, nome_mp3 = baixar_link(link, novo_diretorio)
+        arquivo_ja_baixado = verificar_arquivo_existente(link, novo_diretorio)
+        if arquivo_ja_baixado == False:
+            baixar_arquivo(link, novo_diretorio)
+
+def baixar_arquivo(link, novo_diretorio):
+    yt = pytube.YouTube(link, on_progress_callback = on_progress)
+    titulo = yt.title
+    print("Título: ", titulo)
+    print("Baixando...")
+    arquivo=yt.streams.get_audio_only()
+    downloaded_file = arquivo.download(novo_diretorio)
+    converte_em_mp3(downloaded_file)
 
 if __name__ == '__main__':
-    arquivo = r"C:/Users/georg/Music/Cultura.txt"
-    name = arquivo.split("\\")
-    for el in name:
-        if ".txt" in el:
-            nome_arquivo = el
-    
-    novo_diretorio = criar_pasta_para_download(nome_arquivo)
-
-    lista_de_links = ler_arquivo(arquivo)
-
-    baixar_arquivos(novo_diretorio, lista_de_links)
+    directory = 'C:/Users/georg/Music'
+    lista_de_txt = Path(directory).glob('*.txt')
+    for txt in lista_de_txt:
+        arquivo_txt = os.path.basename(txt)
+        nome_arquivo_txt = arquivo_txt[:-4]
+        nova_pasta_txt = criar_pasta_para_download(nome_arquivo_txt)
+        lista_de_links = ler_arquivo_txt(txt)
+        arquivo_txt = verificar_arquivos(nova_pasta_txt, lista_de_links)
 
     print("****************************************")
     print("Seja Feliz! Seus arquivos foram baixados")
